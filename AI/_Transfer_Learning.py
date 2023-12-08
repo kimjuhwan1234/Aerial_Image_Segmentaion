@@ -1,11 +1,7 @@
 from tqdm.notebook import tqdm
-from torch.utils.data import Dataset
 
-import os
-import cv2
 import time
 import torch
-import numpy as np
 import torch.nn as nn
 
 if True:
@@ -301,35 +297,4 @@ class Transfer_Learning:
         return model, loss_history, metric_history
 
 
-class CustomDataset(Dataset):
-    def __init__(self, path, augmentations=None):
-        self.image_path = os.path.join(path, 'image')
-        self.mask_path = os.path.join(path, 'mask')
-        self.augmentations = augmentations
-        self.file_list = os.listdir(self.image_path)
 
-    def __len__(self):
-        return len(self.file_list)
-
-    def __getitem__(self, index):
-        image_filename = os.path.join(self.image_path, self.file_list[index])
-        mask_filename = os.path.join(self.mask_path, self.file_list[index])
-
-        image = cv2.imread(image_filename)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
-        mask = np.expand_dims(mask, axis=-1)
-
-        if self.augmentations:
-            data = self.augmentations(image=image, mask=mask)
-            image = data['image']
-            mask = data['mask']
-
-        image = np.transpose(image, (2, 0, 1)).astype(np.float32)
-        mask = np.transpose(mask, (2, 0, 1)).astype(np.float32)
-
-        image = torch.Tensor(image) / 255.0
-        mask = torch.round(torch.Tensor(mask) / 255.0)
-
-        return image, mask

@@ -9,13 +9,51 @@ from torchvision.transforms import v2 as T
 from torchvision.transforms import ToPILImage
 from torchvision.transforms.functional import resize
 from torchvision.utils import draw_segmentation_masks
+from torch.utils.data import Dataset
 
+import os
+import cv2
 import torch
+import numpy as np
 import torch.nn as nn
 import albumentations as A
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
+
+
+class CustomDataset(Dataset):
+    def __init__(self, path, augmentations=None):
+        self.image_path = os.path.join(path, 'image')
+        self.mask_path = os.path.join(path, 'mask')
+        self.augmentations = augmentations
+        self.file_list = os.listdir(self.image_path)
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, index):
+        image_filename = os.path.join(self.image_path, self.file_list[index])
+        mask_filename = os.path.join(self.mask_path, self.file_list[index])
+
+        image = cv2.imread(image_filename)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
+        mask = np.expand_dims(mask, axis=-1)
+
+        if self.augmentations:
+            data = self.augmentations(image=image, mask=mask)
+            image = data['image']
+            mask = data['mask']
+
+        image = np.transpose(image, (2, 0, 1)).astype(np.float32)
+        mask = np.transpose(mask, (2, 0, 1)).astype(np.float32)
+
+        image = torch.Tensor(image) / 255.0
+        mask = torch.round(torch.Tensor(mask) / 255.0)
+
+        return image, mask
 
 
 class SegmentationModel(nn.Module):
@@ -28,7 +66,7 @@ class SegmentationModel(nn.Module):
             encoder_weights=weights,
             in_channels=3,
             classes=1,
-            activation='softmax'
+            activation=None
         )
 
         self.additional_layer = nn.Sequential(
@@ -39,8 +77,7 @@ class SegmentationModel(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(128, 1, kernel_size=1),
-            nn.Upsample(scale_factor=8, mode='bilinear', align_corners=False),
-            nn.Softmax(dim=1)
+            nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
         )
 
     def forward(self, images, masks=None):
@@ -56,7 +93,7 @@ class SegmentationModel(nn.Module):
 
 def get_train_augs():
     return A.Compose([
-        A.Resize(512, 512),
+        A.CenterCrop(512, 512),
         A.Blur(blur_limit=(3, 7)),
         A.HorizontalFlip(p=0.5),
         A.ElasticTransform(alpha=1, sigma=50),
@@ -69,7 +106,7 @@ def get_train_augs():
 
 def get_test_augs():
     return A.Compose([
-        A.Resize(512, 512),
+        A.CenterCrop(512, 512),
     ])
 
 
