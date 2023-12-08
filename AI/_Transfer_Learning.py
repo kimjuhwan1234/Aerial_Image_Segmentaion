@@ -191,7 +191,6 @@ if True:
     def resnet152():
         return ResNet(BottleNeck, [3, 8, 36, 3])
 
-
 class Transfer_Learning:
     def __init__(self, device):
         self.device = device
@@ -201,7 +200,7 @@ class Transfer_Learning:
             return param_group['lr']
 
     def metric_batch(self, output, mask):
-        pred_mask = (output > 0.4).float()  # 마스크 예측 값 이진화
+        pred_mask = (output > 0.5).float()  # 마스크 예측 값 이진화
         accuracy = (pred_mask == mask).sum().item()  # 정확한 픽셀 수 계산
         total_pixels = mask.numel()  # 전체 픽셀 수 계산
         accuracy = accuracy / total_pixels
