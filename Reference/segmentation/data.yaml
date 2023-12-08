@@ -1,0 +1,12 @@
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: /mnt/disks/data1/aihub/Training/Modified_Data  # dataset root dir
+train: train.txt  # train train (relative to 'path') 4 train
+val: valid.txt  # val train (relative to 'path') 4 train
+test:  # test train (optional)
+
+names:
+  0: 선박
+  1: 부표
+  2: 기타부유물
+  3: 등대
+  4: 어망부표
