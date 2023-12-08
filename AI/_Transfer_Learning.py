@@ -1,3 +1,4 @@
+import pandas as pd
 from tqdm.notebook import tqdm
 
 import time
@@ -200,8 +201,10 @@ class Transfer_Learning:
             return param_group['lr']
 
     def metric_batch(self, output, mask):
-        pred_mask = (output > 0.5).float()  # 마스크 예측 값 이진화
+        pred_mask = (output > 0.4).float()  # 마스크 예측 값 이진화
         accuracy = (pred_mask == mask).sum().item()  # 정확한 픽셀 수 계산
+        total_pixels = mask.numel()  # 전체 픽셀 수 계산
+        accuracy = accuracy / total_pixels
 
         return accuracy
 
@@ -218,6 +221,7 @@ class Transfer_Learning:
                 mask = mask.to(self.device)
 
                 output, loss = model(image, mask)
+                output = torch.sigmoid(output)
                 total_loss += loss
 
                 metric = self.metric_batch(output, mask)
@@ -241,6 +245,7 @@ class Transfer_Learning:
 
             opt.zero_grad()
             output, loss = model(image, mask)
+            output = torch.sigmoid(output)
             loss.backward()
             opt.step()
 
@@ -264,8 +269,8 @@ class Transfer_Learning:
         opt = params["optimizer"]
         lr_scheduler = params["lr_scheduler"]
 
-        loss_history = {'train': [], 'val': []}
-        metric_history = {'train': [], 'val': []}
+        loss_history = pd.DataFrame(columns=['train', 'val'])
+        metric_history = pd.DataFrame(columns=['train', 'val'])
 
         best_loss = float('inf')
         start_time = time.time()
@@ -275,12 +280,13 @@ class Transfer_Learning:
             print(f'Epoch {epoch + 1}/{num_epochs}, current lr={current_lr}')
 
             train_loss, train_metric = self.loss_epoch(model, train_dl, opt)
-            loss_history['train'].append(train_loss)
-            metric_history['train'].append(train_metric)
+
+            loss_history.loc[epoch, 'train'] = train_loss
+            metric_history.loc[epoch, 'train'] = train_metric
 
             val_loss, val_metric = self.eval_epoch(model, val_dl)
-            loss_history['val'].append(val_loss)
-            metric_history['val'].append(val_metric)
+            loss_history.loc[epoch, 'val'] = val_loss
+            metric_history.loc[epoch, 'val'] = val_metric
 
             if val_loss < best_loss:
                 best_loss = val_loss
@@ -290,11 +296,8 @@ class Transfer_Learning:
             lr_scheduler.step(val_loss)
 
             print(f'train loss: {train_loss:.2f}, val loss: {val_loss:.2f}')
-            print(f'accuracy: {val_metric:.2f}, time: {(time.time() - start_time) / 60:.2f}')
+            print(f'accuracy: {100 * val_metric:.2f} %, time: {(time.time() - start_time) / 60:.2f}')
 
             print('-' * 10)
 
         return model, loss_history, metric_history
-
-
-

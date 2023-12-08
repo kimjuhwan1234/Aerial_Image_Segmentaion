@@ -3,17 +3,18 @@ from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from segmentation_models_pytorch.losses import DiceLoss
-
+from PIL import Image
 from torchvision.io import read_image
 from torchvision.transforms import v2 as T
 from torchvision.transforms import ToPILImage
-from torchvision.transforms.functional import resize
+from torchvision.transforms.functional import to_pil_image, resize
 from torchvision.utils import draw_segmentation_masks
 from torch.utils.data import Dataset
 
 import os
 import cv2
 import torch
+import warnings
 import numpy as np
 import torch.nn as nn
 import albumentations as A
@@ -39,8 +40,9 @@ class CustomDataset(Dataset):
         image = cv2.imread(image_filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
-        mask = np.expand_dims(mask, axis=-1)
+        if self.check:
+            mask = cv2.imread(mask_filename)
+            mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
 
         if self.augmentations:
             data = self.augmentations(image=image, mask=mask)
@@ -73,9 +75,11 @@ class SegmentationModel(nn.Module):
             nn.Conv2d(1, 64, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(p=0.5),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(p=0.5),
             nn.Conv2d(128, 1, kernel_size=1),
             nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
         )
@@ -110,15 +114,11 @@ def get_test_augs():
     ])
 
 
-def get_transform(train):
+def get_transform():
     transforms = []
-
-    if train:
-        transforms.append(T.RandomHorizontalFlip(0.5))
-
+    transforms.append(T.CenterCrop((4992, 4992)))
     transforms.append(T.ToDtype(torch.float, scale=True))
     transforms.append(T.ToPureTensor())
-
     return T.Compose(transforms)
 
 
@@ -126,6 +126,7 @@ if __name__ == '__main__':
     train_dir = '../AerialImageDatasetrescale/train'
     val_dir = '../AerialImageDatasetrescale/val'
     test_dir = '../AerialImageDatasetrescale/test'
+    check_dir = '../AerialImageDatasetrescale/check'
 
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     print(device)
@@ -143,7 +144,7 @@ if __name__ == '__main__':
                        'val': torch.utils.data.DataLoader(val_dataset, batch_size=2,
                                                           shuffle=False, num_workers=4),
                        'test': torch.utils.data.DataLoader(test_dataset, batch_size=2,
-                                                           shuffle=False, num_workers=4)
+                                                           shuffle=False, num_workers=4),
                        }
 
         model = SegmentationModel()
@@ -151,16 +152,16 @@ if __name__ == '__main__':
         weight_path = '../weight/Unet.pth'
         print('Finished loading data!')
 
-    train = True
+    train = False
     if train:
         print('Training model...')
         TL = Transfer_Learning(device)
-        num_epochs = 10
+        num_epochs = 3
 
         optimizer = True
         if optimizer:
-            opt = optim.Adam(model.parameters(), lr=0.001)
-            # opt = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+            opt = optim.Adam(model.parameters(), lr=0.01)
+            # opt = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
         lr = True
         if lr:
@@ -182,25 +183,31 @@ if __name__ == '__main__':
 
         accuracy_check = True
         if accuracy_check:
-            print('Check accuracy...')
+            print('Check stats...')
             correct = 0
             total = 0
 
             with torch.no_grad():
                 for data in dataloaders['val']:
                     images, mask = data[0].to(device), data[1].to(device)
-                    output = model(images.to(device))
+                    output = model(images)
 
-                    predictions = (output > 0.5).int()
-                    correct = (predictions == mask).float()
-                    accuracy = correct.mean().item()
+                    pred_mask = (output > 0.4).float()
+                    accuracy = (pred_mask == mask).sum().item()
+                    total_pixels = mask.numel()
+                    accuracy = accuracy / total_pixels
 
-            print(f'Accuracy {100 * correct // total} %')
+            print(f'Accuracy {100 * accuracy:.2f} %')
+
+            loss_hist_numpy = loss_hist.applymap(
+                lambda x: x.cpu().detach().numpy() if isinstance(x, torch.Tensor) else x)
+            metric_hist_numpy = metric_hist.applymap(
+                lambda x: x.cpu().detach().numpy() if isinstance(x, torch.Tensor) else x)
 
             # plot loss progress
             plt.title("Train-Val Loss")
-            plt.plot(range(1, num_epochs + 1), loss_hist["train"], label="train")
-            plt.plot(range(1, num_epochs + 1), loss_hist["val"], label="val")
+            plt.plot(range(1, num_epochs + 1), loss_hist_numpy.iloc[:, 0], label="train")
+            plt.plot(range(1, num_epochs + 1), loss_hist_numpy.iloc[:, 1], label="val")
             plt.ylabel("Loss")
             plt.xlabel("Training Epochs")
             plt.legend()
@@ -208,52 +215,57 @@ if __name__ == '__main__':
 
             # plot accuracy progress
             plt.title("Train-Val Accuracy")
-            plt.plot(range(1, num_epochs + 1), metric_hist["train"], label="train")
-            plt.plot(range(1, num_epochs + 1), metric_hist["val"], label="val")
+            plt.plot(range(1, num_epochs + 1), metric_hist_numpy.iloc[:, 0], label="train")
+            plt.plot(range(1, num_epochs + 1), metric_hist_numpy.iloc[:, 1], label="val")
             plt.ylabel("Accuracy")
             plt.xlabel("Training Epochs")
             plt.legend()
             plt.show()
-            print('Finished accuracy check!')
+            print('Finished stats check!')
 
     if not train:
         print('Skipped train...')
         model.load_state_dict(torch.load(weight_path))
         print('Weights are loaded!')
 
-    Result = False
+    Result = True
     if Result:
         print('Try prediction...')
         device = 'cpu'
         model.to(device)
-
+        warnings.filterwarnings("ignore")
         test_image = read_image("../AerialImageDatasetrescale/check/bellingham1.png")
         test_image = test_image.to(device)
-        test_image = resize(test_image, size=(4992, 4992))
-        image = test_image
-        test_image = test_image.unsqueeze(0)
-        eval_transform = get_transform(train=False)
+
+        image = resize(test_image, (4992, 4992))
+        # original_image = image.float() / 255.0
+        # original_image = original_image.to(torch.uint8)
+        eval_transform = get_transform()
+        test_image = eval_transform(test_image).unsqueeze(0)
 
         model.eval()
         with torch.no_grad():
-            test_image = eval_transform(test_image)
+
             predicted_mask = model(test_image)
+            predicted_mask = torch.sigmoid(predicted_mask)
 
         original_image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
         predicted_mask = (predicted_mask > 0.5).select(1, 0)
 
         output_image = draw_segmentation_masks(original_image, predicted_mask, alpha=0.5, colors="blue")
 
-        output_image_pil = ToPILImage()(output_image)
-        output_image_pil.save("../AerialImageDatasetrescale/output.png")
+        output_image = to_pil_image(output_image)
+        output_image.save("../AerialImageDatasetrescale/output.png")
         print("Masking and saving complete!")
+
+
 
     if not Result:
         print('Show test image...')
-        image, mask = test_dataset[1]
+        image, mask = test_dataset[9]
         logits_mask = model(image.to(device).unsqueeze(0))  # (c,h,w) -> (b,c,h,w)
         pred_mask = torch.sigmoid(logits_mask)
-        pred_mask = (pred_mask > 0.5) * 1.0
+        pred_mask = (pred_mask > 0.4) * 1.0
 
         image_pil = ToPILImage()(image.cpu())
         true_mask_pil = ToPILImage()(mask.cpu())
