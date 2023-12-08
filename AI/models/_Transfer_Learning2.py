@@ -370,7 +370,7 @@ if __name__ == '__main__':
 
     Data_loader = True
     if Data_loader:
-        data_dir = '../Reference/hymenoptera_data'
+        data_dir = '../../Reference/hymenoptera_data'
         # data_dir = '/workspace/Reference/hymenoptera_data'
         train_folder = '/train'
         val_folder = '/val'

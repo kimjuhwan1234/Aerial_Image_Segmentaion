@@ -1,45 +1,15 @@
 from torchvision.io import read_image
 from torchvision.transforms import v2 as T
-from torchvision import datasets, models, transforms
 from torchvision.transforms import ToPILImage
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.utils import draw_segmentation_masks
-from engine import train_one_epoch
 from torchvision.transforms.functional import resize
-import os
-import torch
-import utils
-import numpy as np
-import torchvision
-import warnings
-
-from UNet import *
 
 from torch.utils.data import Dataset
-from torchvision import transforms
 import segmentation_models_pytorch as smp
 
-from PIL import Image
-from tqdm.notebook import tqdm
-from torchsummary import summary
-from warnings import filterwarnings
-from torch.optim import lr_scheduler
-from torch.utils.data import DataLoader
-from torchvision import datasets, models, transforms
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-import os
-import copy
-import time
-import torch
-import numpy as np
-import torchvision
-import multiprocessing
-import torch.nn as nn
-import torch.optim as optim
-import matplotlib.pyplot as plt
-import torch.backends.cudnn as cudnn
-from _Transfer_Learning2 import *
+from AI.models._Transfer_Learning2 import *
 
 
 def get_model_instance_segmentation(num_classes=2):
@@ -148,7 +118,7 @@ class DynamicNormalize(object):
 
 
 if __name__ == '__main__':
-    data_dir = '../AerialImageDatasetrescale/'
+    data_dir = '../../AerialImageDatasetrescale/'
     train_folder = '/train'
     val_folder = '/val'
 
@@ -274,7 +244,7 @@ if __name__ == '__main__':
     Result = True
     if Result:
         torch.cuda.empty_cache()
-        test_image = read_image("../AerialImageDatasetrescale/check/bellingham1.png")
+        test_image = read_image("../../AerialImageDatasetrescale/check/bellingham1.png")
         test_image = test_image.to(device)
         eval_transform = get_transform(train=False)
         image = test_image

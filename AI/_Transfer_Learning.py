@@ -19,36 +19,15 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import torch.backends.cudnn as cudnn
 
-'''
--  합성곱 신경망의 미세조정(finetuning): 무작위 초기화 대신, 
-   신경망을 ImageNet 1000 데이터셋 등으로 미리 학습한 신경망으로 초기화합니다. 
-   학습의 나머지 과정들은 평상시와 같습니다.
-
--  고정된 특징 추출기로써의 합성곱 신경망: 여기서는 마지막에 완전히 연결된 계층을 제외한 
-   모든 신경망의 가중치를 고정합니다. 이 마지막의 완전히 연결된 계층은 
-   새로운 무작위의 가중치를 갖는 계층으로 대체되어 이 계층만 학습합니다.'''
 
 
 class Transfer_Learning:
-    def __init__(self, device, dataloaders, datasize, classnames):
+    def __init__(self, device, dataloaders):
         self.device = device
-        self.val_dl = dataloaders['val']
         self.dataloaders = dataloaders
-        self.dataset_sizes = datasize
-        self.classnames = classnames
+
         return
 
-    def imshow(self, inp, title=None):
-        """tensor를 입력받아 일반적인 이미지로 보여줍니다."""
-        inp = inp.numpy().transpose((1, 2, 0))
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
-        inp = std * inp + mean
-        inp = np.clip(inp, 0, 1)
-        plt.imshow(inp)
-        if title is not None:
-            plt.title(title)
-        plt.pause(0.001)  # 갱신이 될 때까지 잠시 기다립니다.
 
     def get_lr(self, opt):
         for param_group in opt.param_groups:
