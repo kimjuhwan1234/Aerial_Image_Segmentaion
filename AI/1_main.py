@@ -61,21 +61,21 @@ class SegmentationModel(nn.Module):
         super(SegmentationModel, self).__init__()
         encoder = 'resnet50'
         weights = 'imagenet'
-        # self.backbone = smp.Unet(
-        #     encoder_name=encoder,
-        #     encoder_weights=weights,
-        #     in_channels=3,
-        #     classes=1,
-        #     activation=None
-        # )
-
-        self.backbone = smp.DeepLabV3Plus(
+        self.backbone = smp.Unet(
             encoder_name=encoder,
             encoder_weights=weights,
             in_channels=3,
             classes=1,
             activation=None
         )
+
+        # self.backbone = smp.DeepLabV3Plus(
+        #     encoder_name=encoder,
+        #     encoder_weights=weights,
+        #     in_channels=3,
+        #     classes=1,
+        #     activation=None
+        # )
 
         self.additional_layer = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=3, padding=1),
@@ -97,6 +97,7 @@ class SegmentationModel(nn.Module):
 
         if masks != None:
             return output, DiceLoss(mode='binary')(output, masks) + nn.BCEWithLogitsLoss()(output, masks)
+            # return backbone_output, DiceLoss(mode='binary')(backbone_output, masks) + nn.BCEWithLogitsLoss()(backbone_output, masks)
 
         return output
 
@@ -155,7 +156,6 @@ def calculate_roc_curve(gt, prediction):
     plt.legend()
     plt.show()
 
-
 def get_train_augs():
     return A.Compose([
         A.CenterCrop(512, 512),
@@ -213,14 +213,14 @@ if __name__ == '__main__':
         weight_path = '../weight/Unet_custom_30.pth'
         print('Finished loading data!')
 
-    train = True
+    train = False
     if train:
         print('Training model...')
         TL = Transfer_Learning(device)
-        num_epochs = 30
+        num_epochs = 10
 
-        opt = optim.Adam(model.parameters(), lr=0.01)
-        # opt = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+        # opt = optim.Adam(model.parameters(), lr=0.01)
+        opt = optim.Adagrad(model.parameters(),lr=0.01)
         lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=5)
 
         params_train = {
@@ -248,7 +248,7 @@ if __name__ == '__main__':
                     images, mask = data[0].to(device), data[1].to(device)
                     output = model(images)
 
-                    pred_mask = (output > 0.4).float()
+                    pred_mask = (output > 0.5).float()
                     accuracy = (pred_mask == mask).sum().item()
                     total_pixels = mask.numel()
                     accuracy = accuracy / total_pixels
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         device = 'cpu'
         model.to(device)
         warnings.filterwarnings("ignore")
-        test_image = read_image("../AerialImageDatasetrescale/check/bellingham1.png")
+        test_image = read_image("../AerialImageDatasetrescale/check/sfo29.png")
         test_image = test_image.to(device)
 
         image = resize(test_image, (4992, 4992))
@@ -304,7 +304,7 @@ if __name__ == '__main__':
             predicted_mask = torch.sigmoid(predicted_mask)
 
         original_image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
-        predicted_mask = (predicted_mask > 0.5).select(1, 0)
+        predicted_mask = (predicted_mask > 0.8).select(1, 0)
 
         output_image = draw_segmentation_masks(original_image, predicted_mask, alpha=0.5, colors="blue")
 
@@ -341,7 +341,7 @@ if __name__ == '__main__':
         if evaluate:
             device = 'cpu'
             mask = mask.to(device).numpy()  # ground truth
-            logits_mask = logits_mask.to(device).detach().numpy()  # predicted probabilities
+            logits_mask = logits_mask.to(device).detach().numpy() # predicted probabilities
             pred_mask = pred_mask.to(device).numpy()  # predicted mask consisted with 0 or 1
 
             calculate_roc_curve(mask, logits_mask)
@@ -355,4 +355,3 @@ if __name__ == '__main__':
             print(f'Confusion matrix:')
             print(cfx)
             print('Completed!')
-
