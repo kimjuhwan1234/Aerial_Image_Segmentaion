@@ -120,7 +120,7 @@ if True:
             x = self.fc(x)
             return x
 
-        # define weight initialization function
+        # define Weight initialization function
         def _initialize_weights(self):
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
@@ -290,7 +290,7 @@ class Transfer_Learning:
             if val_loss < best_loss:
                 best_loss = val_loss
                 torch.save(model.state_dict(), weight_path)
-                print('Saved model weight!')
+                print('Saved model Weight!')
 
             lr_scheduler.step(val_loss)
 

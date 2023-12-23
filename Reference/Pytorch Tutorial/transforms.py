@@ -284,7 +284,7 @@ class ScaleJitter(nn.Module):
     `"Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation" <https://arxiv.org/abs/2012.07177>`_.
 
     Args:
-        target_size (tuple of ints): The target size for the transform provided in (height, weight) format.
+        target_size (tuple of ints): The target size for the transform provided in (height, Weight) format.
         scale_range (tuple of ints): scaling factor interval, e.g (a, b), then scale is randomly sampled from the
             range a <= scale <= b.
         interpolation (InterpolationMode): Desired interpolation enum defined by

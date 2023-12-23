@@ -125,7 +125,7 @@ if model:
     # flatten = nn.Flatten()
     # flat_image = flatten(input_image)
     #
-    # # 선형 계층은 저장된 가중치(weight)와 편향(bias)을 사용하여 입력에 선형 변환(linear transformation)을 적용하는 모듈입니다.
+    # # 선형 계층은 저장된 가중치(Weight)와 편향(bias)을 사용하여 입력에 선형 변환(linear transformation)을 적용하는 모듈입니다.
     # layer1 = nn.Linear(in_features=28 * 28, out_features=20)
     # hidden1 = layer1(flat_image)
     #
@@ -269,7 +269,7 @@ if mae:
     print(device)
 
     # Load a sample image
-    image_path = "../../database/PNGImages/austin1.png"  # Replace with the actual path to your image
+    image_path = "../../Database/PNGImages/austin1.png"  # Replace with the actual path to your image
     image = Image.open(image_path)
 
     # Preprocess the image (resize, normalize, etc.)
@@ -386,7 +386,7 @@ if masking3:
         transforms.ToTensor(),
     ])
 
-    train_dataset = CustomImageDataset(data_dir='../database', transform=transform)
+    train_dataset = CustomImageDataset(data_dir='../Database', transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 
@@ -461,7 +461,7 @@ if masking3:
 
 
     # Example usage
-    test_image_path = '../database/test'  # 테스트 이미지 파일 경로
+    test_image_path = '../Database/test'  # 테스트 이미지 파일 경로
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),

@@ -1,4 +1,4 @@
-from _Transfer_Learning import *
+from Transfer_Learning import *
 from torch.utils.data import Dataset
 from torch.optim import lr_scheduler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -184,10 +184,10 @@ def get_transform():
 
 
 if __name__ == '__main__':
-    train_dir = '../database/train'
-    val_dir = '../database/val'
-    test_dir = '../database/test'
-    check_dir = '../database/check'
+    train_dir = '../Database/train'
+    val_dir = '../Database/val'
+    test_dir = '../Database/test'
+    check_dir = '../Database/check'
 
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     print(device)
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
         model = SegmentationModel()
         model.to(device)
-        weight_path = '../weight/Unet_custom_30.pth'
+        weight_path = '../Weight/Unet_custom_30.pth'
         print('Finished loading data!')
 
     train = False
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         device = 'cpu'
         model.to(device)
         warnings.filterwarnings("ignore")
-        test_image = read_image("../database/check/sfo29.png")
+        test_image = read_image("../Database/check/sfo29.png")
         test_image = test_image.to(device)
 
         image = resize(test_image, (4992, 4992))
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         output_image = draw_segmentation_masks(original_image, predicted_mask, alpha=0.5, colors="blue")
 
         output_image = to_pil_image(output_image)
-        output_image.save("../database/output.png")
+        output_image.save("../Database/output.png")
         print("Masking and saving complete!")
 
     if not Prediction:
