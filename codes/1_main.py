@@ -184,10 +184,10 @@ def get_transform():
 
 
 if __name__ == '__main__':
-    train_dir = '../AerialImageDatasetrescale/train'
-    val_dir = '../AerialImageDatasetrescale/val'
-    test_dir = '../AerialImageDatasetrescale/test'
-    check_dir = '../AerialImageDatasetrescale/check'
+    train_dir = '../database/train'
+    val_dir = '../database/val'
+    test_dir = '../database/test'
+    check_dir = '../database/check'
 
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     print(device)
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         device = 'cpu'
         model.to(device)
         warnings.filterwarnings("ignore")
-        test_image = read_image("../AerialImageDatasetrescale/check/sfo29.png")
+        test_image = read_image("../database/check/sfo29.png")
         test_image = test_image.to(device)
 
         image = resize(test_image, (4992, 4992))
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         output_image = draw_segmentation_masks(original_image, predicted_mask, alpha=0.5, colors="blue")
 
         output_image = to_pil_image(output_image)
-        output_image.save("../AerialImageDatasetrescale/output.png")
+        output_image.save("../database/output.png")
         print("Masking and saving complete!")
 
     if not Prediction:

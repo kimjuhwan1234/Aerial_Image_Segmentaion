@@ -1,8 +1,8 @@
 
 from PIL import Image
 
-from AI.ETC._mae import *
-from AI.ETC._vit import *
+from codes.ETC._mae import *
+from codes.ETC._vit import *
 import torch.nn as nn
 from torchvision import models
 from torchvision import transforms
@@ -269,7 +269,7 @@ if mae:
     print(device)
 
     # Load a sample image
-    image_path = "../../AerialImageDatasetrescale/PNGImages/austin1.png"  # Replace with the actual path to your image
+    image_path = "../../database/PNGImages/austin1.png"  # Replace with the actual path to your image
     image = Image.open(image_path)
 
     # Preprocess the image (resize, normalize, etc.)
@@ -386,7 +386,7 @@ if masking3:
         transforms.ToTensor(),
     ])
 
-    train_dataset = CustomImageDataset(data_dir='../../AerialImageDatasetrescale', transform=transform)
+    train_dataset = CustomImageDataset(data_dir='../database', transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 
@@ -461,7 +461,7 @@ if masking3:
 
 
     # Example usage
-    test_image_path = '../../AerialImageDatasetrescale/test'  # 테스트 이미지 파일 경로
+    test_image_path = '../database/test'  # 테스트 이미지 파일 경로
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
