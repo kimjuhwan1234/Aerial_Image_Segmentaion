@@ -1,5 +1,4 @@
 import pandas as pd
-from tqdm.notebook import tqdm
 
 import time
 import torch
