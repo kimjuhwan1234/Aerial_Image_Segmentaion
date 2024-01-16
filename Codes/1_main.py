@@ -80,13 +80,13 @@ class SegmentationModel(nn.Module):
         self.additional_layer = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(p=0.5),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(p=0.5),
-            nn.Conv2d(128, 1, kernel_size=1),
+            nn.Conv2d(128, 1, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(p=0.3),
             nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
         )
 
