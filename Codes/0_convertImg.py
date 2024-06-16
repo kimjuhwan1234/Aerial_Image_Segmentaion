@@ -38,7 +38,7 @@ def _16bit_to_8Bit(inputRaster, outputRaster, outputPixType='Byte', outputFormat
 
 
 path = '../AerialImageDataset'
-path1 = path + "/test/train/"
+path1 = path + "/test/images/"
 files = os.listdir(path1)
 
 for file in files:
